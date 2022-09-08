@@ -1,0 +1,42 @@
+version: "3.9"
+
+services:
+    dbservice:
+        image: mysql:8.0.30
+        command: --default-authentication-plugin=mysql_native_password
+        container_name: dbservice
+        environment:
+            MYSQL_ROOT_PASSWORD: root
+            MYSQL_DATABASE: nodedb
+        restart: always
+        ports: 
+            - 3306:3306
+        volumes:
+            - ./mysql:/var/lib/mysql
+        networks:
+            - educationnet
+    
+    nodeserver:
+        depends_on:
+            - dbservice
+        build:
+            context: ./node
+        image: jjmulungo/node
+        container_name: node
+        entrypoint: dockerize -wait tcp://dbservice:3306 -timeout 10s docker-entrypoint.sh node index.js
+        networks:
+            - educationnet
+        ports:
+            - "5000:5000"
+    nginx:
+        restart: always
+        build:
+            context: ./nginx
+        image: jjmulungo/nginx
+        container_name: nginx
+        networks:
+            - educationnet
+        ports:
+            - "8080:80"
+networks:
+    educationnet:
